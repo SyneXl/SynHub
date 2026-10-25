@@ -145,7 +145,7 @@ env.isfolder=function() return true end
 env.makefolder=function() end
 env.task={wait=function(duration) M.time+=duration;return duration end}
 env.game.HttpGet=function(_,url)
-    local prefix="https://raw.githubusercontent.com/SyneXl/SynHub/main/"
+    local prefix="https://raw.githubusercontent.com/SyneXl/SynHub/refs/heads/main/"
     assert(url:sub(1,#prefix)==prefix,"Unexpected host")
     local path=url:sub(#prefix+1)
     M.requests[path]=(M.requests[path] or 0)+1

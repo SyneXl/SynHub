@@ -5,7 +5,7 @@ By SyneX
 ## Запуск
 
 ```luau
-loadstring(game:HttpGet("https://raw.githubusercontent.com/SyneXl/SynHub/main/loader.luau"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/SyneXl/SynHub/refs/heads/main/loader.luau"))()
 ```
 
 Загрузчик сам определяет игру и открывает нужный интерфейс. Повторный запуск заменяет предыдущую сессию.

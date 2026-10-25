@@ -65,7 +65,7 @@ def check(luau_dir, remote=False):
     for info in artifacts:
         contents[info['path']] = text(ROOT/info['path'])
     if remote:
-        base = 'https://raw.githubusercontent.com/SyneXl/SynHub/main/'
+        base = 'https://raw.githubusercontent.com/SyneXl/SynHub/refs/heads/main/'
         for name, expected in [('loader.luau', loader), *contents.items()]:
             request = urllib.request.Request(base+name, headers={'Cache-Control': 'no-cache'})
             with urllib.request.urlopen(request, timeout=30) as response:

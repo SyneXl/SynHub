@@ -1,5 +1,5 @@
 -- By SyneX
-local BASE = "https://raw.githubusercontent.com/SyneXl/SynHub/main/"
+local BASE = "https://raw.githubusercontent.com/SyneXl/SynHub/refs/heads/main/"
 local env = getgenv()
 local hub = env.__SynHub or {}
 if hub.loading then warn("[SynHub] Загрузка уже выполняется"); return end
