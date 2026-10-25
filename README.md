@@ -1,5 +1,5 @@
 ```luau
-loadstring(game:HttpGet("https://raw.githubusercontent.com/SyneXl/SynHub/refs/heads/main/loader.luau?synhub=" .. os.time(), false))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/SyneXl/SynHub/refs/tags/bootstrap-v1/loader.luau", false))()
 ```
 
 | Game | Features |

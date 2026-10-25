@@ -1,5 +1,28 @@
 -- By SyneX
-local BASE = "https://raw.githubusercontent.com/SyneXl/SynHub/refs/heads/main/"
+local ROOT = "https://raw.githubusercontent.com/SyneXl/SynHub/"
+local function download(url, label)
+    local lastError
+    for attempt = 1, 3 do
+        local success, value = pcall(game.HttpGet, game, url, false)
+        if success and type(value) == "string" and #value > 0 then return value end
+        lastError = value
+        if attempt < 3 then task.wait(0.3 * attempt) end
+    end
+    error("Не удалось загрузить " .. label .. ": " .. tostring(lastError), 0)
+end
+
+local revision = ...
+if type(revision) ~= "string" or #revision ~= 40 or not revision:match("^%x+$") then
+    local response = download("https://api.github.com/repos/SyneXl/SynHub/git/ref/heads/main?synhub=" .. os.time(), "версию SynHub")
+    local ref = game:GetService("HttpService"):JSONDecode(response)
+    local commit = type(ref) == "table" and type(ref.object) == "table" and ref.object.sha
+    assert(type(commit) == "string" and #commit == 40 and commit:match("^%x+$"), "GitHub не вернул версию SynHub. Попробуй позже.")
+    local chunk, err = loadstring(download(ROOT .. commit .. "/loader.luau", "загрузчик SynHub"), "SynHubLoader")
+    assert(chunk, "Не удалось прочитать загрузчик: " .. tostring(err))
+    return chunk(commit)
+end
+
+local BASE = ROOT .. revision .. "/"
 local games = {[71106427459865] = "slova"}
 local env = getgenv()
 local hub = env.__SynHub or {}
@@ -10,16 +33,8 @@ env.__SynHub = hub
 local ok, result = xpcall(function()
     local name = assert(games[game.PlaceId], "SynHub пока не поддерживает эту игру")
     local folder = "games/" .. name .. "/"
-    local requestId = tostring(os.time()) .. "-" .. tostring(math.floor(os.clock() * 1000))
     local function fetch(path)
-        local lastError
-        for attempt = 1, 3 do
-            local success, value = pcall(game.HttpGet, game, BASE .. path .. "?synhub=" .. requestId, false)
-            if success and type(value) == "string" and #value > 0 then return value end
-            lastError = value
-            if attempt < 3 then task.wait(0.3 * attempt) end
-        end
-        error("Не удалось загрузить " .. path .. ": " .. tostring(lastError), 0)
+        return download(BASE .. path, path)
     end
     local modules, loading = {}, {}
     local function import(moduleName)
