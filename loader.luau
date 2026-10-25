@@ -10,10 +10,11 @@ env.__SynHub = hub
 local ok, result = xpcall(function()
     local name = assert(games[game.PlaceId], "SynHub пока не поддерживает эту игру")
     local folder = "games/" .. name .. "/"
+    local requestId = tostring(os.time()) .. "-" .. tostring(math.floor(os.clock() * 1000))
     local function fetch(path)
         local lastError
         for attempt = 1, 3 do
-            local success, value = pcall(game.HttpGet, game, BASE .. path)
+            local success, value = pcall(game.HttpGet, game, BASE .. path .. "?synhub=" .. requestId, false)
             if success and type(value) == "string" and #value > 0 then return value end
             lastError = value
             if attempt < 3 then task.wait(0.3 * attempt) end
