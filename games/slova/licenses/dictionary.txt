@@ -1,0 +1,20 @@
+The derived Russian noun dictionary is licensed under CC BY-SA 4.0:
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Sources:
+Harrix and contributors / Russian-Nouns, MIT.
+https://github.com/Harrix/Russian-Nouns
+See Harrix-MIT.txt.
+
+Robyn Speer / wordfreq 3.1.1, frequency data CC BY-SA 4.0.
+https://github.com/rspeer/wordfreq
+See wordfreq-LICENSE.txt and wordfreq-NOTICE.md.
+
+OpenCorpora contributors, CC BY-SA 3.0.
+https://opencorpora.org/
+https://creativecommons.org/licenses/by-sa/3.0/
+
+The source list was filtered to common noun lemmas, excluding names and
+abbreviations, using pymorphy3 2.0.6 and pymorphy3-dicts-ru 2.4.417150.4580142.
+Frequency ranking was adjusted by noun parse probability and sorted descending.
+The resulting dictionary contains 39,920 entries.

@@ -1,11 +1,12 @@
 -- By SyneX
-local Core = require("games/slova/core")
-local Config = require("games/slova/config")
-local Driver = require("games/slova/driver")
-local Storage = require("games/slova/storage")
-local Interface = require("games/slova/interface")
-local Scope = require("shared/scope")
-local App = {}
+local require = ...
+local Core = require("core")
+local Config = require("config")
+local Driver = require("driver")
+local Storage = require("storage")
+local Interface = require("interface")
+local Scope = require("scope")
+local App = {version = "1.0.2"}
 
 function App.start(context)
     local app = {alive = true, dirty = true, scope = Scope.new(), context = context}
