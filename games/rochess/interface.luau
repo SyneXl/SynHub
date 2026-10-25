@@ -19,19 +19,10 @@ function Interface.create(app, context)
     for index, gui in ipairs({Library.ScreenGui, Library.DropdownGui, Library.TooltipGui, Library.NotificationGui}) do
         gui.DisplayOrder = 1000 + index
     end
-    local mint = Color3.fromRGB(116, 235, 171)
-    Library:AddTheme({Name = "Chess", Accent = Color3.fromRGB(18, 22, 26), Primary = mint,
-        Background = Color3.fromRGB(18, 22, 26), Text = Color3.fromRGB(238, 242, 244),
-        Outline = Color3.fromRGB(53, 63, 68), Placeholder = Color3.fromRGB(141, 153, 160),
-        Button = mint, Icon = mint, Hover = Color3.fromRGB(39, 48, 53),
-        WindowBackground = Color3.fromRGB(14, 18, 21), WindowTopbarAuthor = Color3.fromRGB(141, 153, 160),
-        ElementBackground = Color3.fromRGB(28, 34, 39), ElementBackgroundTransparency = 0,
-        PanelBackground = Color3.fromRGB(18, 22, 26), PanelBackgroundTransparency = 0,
-        SectionBox = Color3.fromRGB(28, 34, 39), SectionBoxTransparency = 0,
-        SectionBoxBackground = Color3.fromRGB(22, 28, 32), SectionBoxBackgroundTransparency = 0,
-        ElementDesc = Color3.fromRGB(154, 168, 175),
-        Toggle = mint, Slider = mint, SliderThumb = Color3.fromRGB(242, 249, 245)})
-    window = Library:CreateWindow({Title = "RoChess", Author = "By SyneX", Icon = "crown", Theme = "Chess",
+    local palette = context.theme
+    local accent = palette.accent
+    Library:AddTheme(palette.windui)
+    window = Library:CreateWindow({Title = "RoChess", Author = "By SyneX", Icon = "crown", Theme = palette.windui.Name,
         Folder = "SynHub/rochess/UI", Size = UDim2.fromOffset(530, 570), MinSize = Vector2.new(490, 460),
         SideBarWidth = 136, NewElements = true, Radius = 16, ElementsRadius = 12,
         Transparent = false, Resizable = true, AutoScale = false, User = {Enabled = false},
@@ -42,11 +33,11 @@ function Interface.create(app, context)
     window:SetUIScale(app.config.uiScale)
     window:OnDestroy(function() if app.alive then app:Destroy() end end)
     window.UIElements.Main.Position = UDim2.new(1, -285, 0.5, 0)
-    window:Tag({Title = "Stockfish 18", Icon = "cpu", Color = mint, Border = true})
+    window:Tag({Title = "Stockfish 18", Icon = "cpu", Color = accent, Border = true})
 
-    local play = window:Tab({Title = "loc:play", Icon = "compass", IconColor = mint})
-    local autoTab = window:Tab({Title = "loc:autoTab", Icon = "play", IconColor = mint})
-    local settings = window:Tab({Title = "loc:settings", Icon = "settings", IconColor = mint})
+    local play = window:Tab({Title = "loc:play", Icon = "compass", IconColor = accent})
+    local autoTab = window:Tab({Title = "loc:autoTab", Icon = "play", IconColor = accent})
+    local settings = window:Tab({Title = "loc:settings", Icon = "settings", IconColor = accent})
     local status = play:Paragraph({Title = "", Desc = ""})
     play:Toggle({Title = "loc:hints", Value = app.config.enabled, Callback = function(value)
         app.config.enabled = value; app:invalidate(); app:scheduleSave()
@@ -56,7 +47,7 @@ function Interface.create(app, context)
         if not syncingAuto then app:setAuto(value) end
     end})
     app.autoToggle = autoToggle
-    local colors = {mint, Color3.fromRGB(119, 182, 255), Color3.fromRGB(255, 202, 113)}
+    local colors = palette.moves
     local cards = {}
     for rank = 1, 3 do
         cards[rank] = play:Button({Title = "", Icon = "arrow-up-right", IconColor = colors[rank],
@@ -254,7 +245,7 @@ function Interface.create(app, context)
             local row = app.config.enabled and rows[rank] or nil
             card.ElementFrame.Visible = row ~= nil
             if row then
-                local color = ({"#74ebab", "#77b6ff", "#ffca71"})[rank]
+                local color = palette.moveHex[rank]
                 local title = string.format('<font color="%s">%02d</font>   <b>%s</b>   %s', color, rank, row.san, Analysis.score(row, snapshot.color))
                 local description = Analysis.coordinates(row, app.config.language)
                 if titles[rank] ~= title then card:SetTitle(title); titles[rank] = title end

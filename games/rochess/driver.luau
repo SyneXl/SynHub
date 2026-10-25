@@ -1,6 +1,7 @@
 -- By SyneX
 local import = ...
 local Analysis = import("analysis")
+local Strength = import("strength")
 local Driver = {}
 
 function Driver.new()
@@ -75,9 +76,11 @@ function Driver.new()
 
     function driver.target(snapshot, rating, budget, cancelled)
         if not botOk or type(Bot) ~= "table" or type(Bot.think) ~= "function" or cancelled() then return nil end
+        local profile = Strength.profile(rating, budget, settings.BOTS)
+        if not profile then return nil end
         local session = snapshot.session
         return Bot.think(session.startFen or session.engine.startFen or Engine.START_FEN, table.clone(session.ucis),
-            {rating = rating, time = budget, depth = 12}, {cancelled = cancelled})
+            profile, {cancelled = cancelled})
     end
 
     function driver.flip() client.flip() end

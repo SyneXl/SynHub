@@ -73,9 +73,10 @@ local ok, result = xpcall(function()
     local module = import("main")
     assert(type(module) == "table" and type(module.start) == "function", "Не найден модуль игры")
     local assets = {interface = fetch("vendor/WindUI.luau")}
+    local theme = assert(loadstring(fetch("theme.luau"), "SynHub/Theme"))()
     for key, path in pairs(module.assets or {}) do assets[key] = fetch(folder .. path) end
     local context = {
-        env = env, assets = assets,
+        env = env, assets = assets, theme = theme,
         release = {id = name, version = module.version},
         api = {loadstring = loadstring, debug = debug, getconnections = getconnections,
             setthreadidentity = setthreadidentity, readfile = readfile, writefile = writefile,

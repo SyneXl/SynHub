@@ -6,7 +6,7 @@ local Driver = require("driver")
 local Storage = require("storage")
 local Interface = require("interface")
 local Scope = require("scope")
-local App = {version = "1.0.6"}
+local App = {version = "1.0.7"}
 App.assets = {dictionary = "words.txt"}
 
 function App.start(context)

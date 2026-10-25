@@ -18,17 +18,18 @@ function Interface.create(app, context, Core)
     for i,gui in ipairs({Library.ScreenGui,Library.DropdownGui,Library.TooltipGui,Library.NotificationGui}) do
         gui.DisplayOrder=1000+i
     end
+    Library:AddTheme(context.theme.windui)
     window = Library:CreateWindow({Title="SynHub — Слова", Author="By SyneX", Folder="SynHub/slova/UI",
         Size=UDim2.fromOffset(650,650), MinSize=Vector2.new(580,490), SideBarWidth=130,
-        Theme="Dark", Transparent=false, Resizable=true, User={Enabled=false}})
+        Theme=context.theme.windui.Name, Transparent=false, Resizable=true, User={Enabled=false}})
     app.window = window
     app.scope:add(function() window:Destroy() end)
     window:SetToggleKey(nil)
     window:OnDestroy(function() if app.alive then app:Destroy() end end)
 
-    local play = window:Tab({Title="Игра",Icon="play"})
-    local historyTab = window:Tab({Title="История",Icon="history"})
-    local settings = window:Tab({Title="Настройки",Icon="settings"})
+    local play = window:Tab({Title="Игра",Icon="play",IconColor=context.theme.accent})
+    local historyTab = window:Tab({Title="История",Icon="history",IconColor=context.theme.accent})
+    local settings = window:Tab({Title="Настройки",Icon="settings",IconColor=context.theme.accent})
     local function textBlock(tab, title, description)
         return tab:Paragraph({Title=title,Desc=description}).ParagraphFrame
     end

@@ -10,7 +10,7 @@ local I18n = require("i18n")
 local Auto = require("autoplay")
 local Queue = require("matchmaking")
 local Resume = require("resume")
-local App = {version = "1.2.0"}
+local App = {version = "1.2.1"}
 
 function App.start(context)
     local app: any = {alive = true, dirty = true, scope = Scope.new(), context = context, rows = {}, selected = 1,
@@ -109,7 +109,7 @@ function App.start(context)
         app.scope:add(function() app.queue:Destroy() end)
         app.engine = Engine.new(context.api, http)
         app.scope:add(function() app.engine:cancel() end)
-        app.overlay = Overlay.new(context.api.Drawing)
+        app.overlay = Overlay.new(context.theme)
         app.scope:add(function() app.overlay:Destroy() end)
         app.view = Interface.create(app, context)
         Resume.start(app, context)
