@@ -1,0 +1,12 @@
+{
+  "slova": {
+    "name": "Игра в Слова",
+    "version": "1.0.0",
+    "placeIds": [71106427459865],
+    "entry": "games/slova/init",
+    "assets": {
+      "dictionary": "data/dictionaries/russian-nouns.txt",
+      "interface": "vendor/WindUI-1.6.66.luau"
+    }
+  }
+}

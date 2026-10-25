@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "games": [
+    {
+      "id": "slova",
+      "name": "Игра в Слова",
+      "version": "1.0.0",
+      "placeIds": [
+        71106427459865
+      ],
+      "script": {
+        "path": "releases/slova/c33fdebca07230f2b318de4d2275926fef86d7e5800e5fae00fd43c395859087.luau",
+        "bytes": 32176,
+        "sha256": "c33fdebca07230f2b318de4d2275926fef86d7e5800e5fae00fd43c395859087"
+      },
+      "assets": {
+        "dictionary": {
+          "path": "assets/dictionary/db65e344f7226af1dda5af9af17cee4df8eb4bc2531a7ba42047e4bd07e5b527.txt",
+          "bytes": 745684,
+          "sha256": "db65e344f7226af1dda5af9af17cee4df8eb4bc2531a7ba42047e4bd07e5b527"
+        },
+        "interface": {
+          "path": "assets/interface/125b5dc3e5f02baf8008504879eef517ca29405c21255497e84da696fac51fc7.luau",
+          "bytes": 274078,
+          "sha256": "125b5dc3e5f02baf8008504879eef517ca29405c21255497e84da696fac51fc7"
+        }
+      }
+    }
+  ]
+}
