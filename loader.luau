@@ -13,10 +13,31 @@ end
 
 local revision = ...
 if type(revision) ~= "string" or #revision ~= 40 or not revision:match("^%x+$") then
-    local response = download("https://api.github.com/repos/SyneXl/SynHub/git/ref/heads/main?synhub=" .. os.time(), "версию SynHub")
-    local ref = game:GetService("HttpService"):JSONDecode(response)
-    local commit = type(ref) == "table" and type(ref.object) == "table" and ref.object.sha
-    assert(type(commit) == "string" and #commit == 40 and commit:match("^%x+$"), "GitHub не вернул версию SynHub. Попробуй позже.")
+    local httpService = game:GetService("HttpService")
+    local send = request or http_request or (http and http.request)
+    local function parse(body)
+        if type(body) ~= "string" then return nil end
+        local ok, ref = pcall(httpService.JSONDecode, httpService, body)
+        local sha = ok and type(ref) == "table" and type(ref.object) == "table" and ref.object.sha
+            or body:match("<id>tag:github.com,2008:Grit::Commit/(%x+)</id>")
+        return type(sha) == "string" and #sha == 40 and sha:match("^%x+$") and sha or nil
+    end
+    local commit
+    for _, endpoint in ipairs({"https://api.github.com/repos/SyneXl/SynHub/git/ref/heads/main",
+        "https://github.com/SyneXl/SynHub/commits/main.atom"}) do
+        local url = endpoint .. "?synhub=" .. os.time()
+        if type(send) == "function" then
+            local ok, response = pcall(send, {Url = url, Method = "GET",
+                Headers = {["User-Agent"] = "SynHub", ["Cache-Control"] = "no-cache"}})
+            if ok and type(response) == "table" then commit = parse(response.Body) end
+        end
+        if not commit then
+            local ok, response = pcall(game.HttpGet, game, url, false)
+            if ok then commit = parse(response) end
+        end
+        if commit then break end
+    end
+    assert(commit, "Could not resolve the latest version. Please try again.")
     local chunk, err = loadstring(download(ROOT .. commit .. "/loader.luau", "загрузчик SynHub"), "SynHubLoader")
     assert(chunk, "Не удалось прочитать загрузчик: " .. tostring(err))
     return chunk(commit)
