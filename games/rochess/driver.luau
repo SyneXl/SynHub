@@ -29,7 +29,10 @@ function Driver.new()
         if session.kind ~= "idle" and session.kind ~= "online" and session.kind ~= "bot" then
             return {reason = "paused"}
         end
-        if client.pendingChallenge or client.modals and client.modals.top() then return {reason = "paused"} end
+        local modal = client.modals and client.modals.top()
+        if client.pendingChallenge or modal and not (session.over and modal.name == "GameOver") then
+            return {reason = "paused"}
+        end
         return {ready = true}
     end
 

@@ -10,7 +10,7 @@ local I18n = require("i18n")
 local Auto = require("autoplay")
 local Queue = require("matchmaking")
 local Resume = require("resume")
-local App = {version = "1.2.1"}
+local App = {version = "1.2.2"}
 
 function App.start(context)
     local app: any = {alive = true, dirty = true, scope = Scope.new(), context = context, rows = {}, selected = 1,
