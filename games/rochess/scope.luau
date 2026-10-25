@@ -20,7 +20,7 @@ function Scope:Destroy()
         local ok, err = pcall(function()
             if type(item) == "function" then item() else item:Disconnect() end
         end)
-        if not ok then warn("[SynHub] Не удалось завершить обработчик: " .. tostring(err)) end
+        if not ok then warn("[SynHub] Could not clean up listener: " .. tostring(err)) end
     end
     table.clear(self.items)
 end

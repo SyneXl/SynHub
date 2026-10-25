@@ -27,7 +27,7 @@ function Engine:tick()
     if operation and operation.alive and self.clock() - operation.started > 10 then
         local callback = operation.callback
         self:cancel()
-        callback("error", "Движок не ответил. Повторю попытку")
+        callback("error", "engineTimeout")
     end
 end
 
@@ -54,7 +54,7 @@ function Engine:analyze(fen, legal, depth, callback)
         operation.rest = true
         close(operation)
         local request = self.api.request
-        if type(request) ~= "function" then finish("error", "Не удалось подключиться к движку"); return end
+        if type(request) ~= "function" then finish("error", "engineConnect"); return end
         local rows, remaining = {}, {}
         for move in pairs(legal) do remaining[move] = true end
         for rank = 1, operation.model.count do
@@ -69,11 +69,11 @@ function Engine:analyze(fen, legal, depth, callback)
             if not current() then return end
             if not ok or type(response) ~= "table" or tonumber(response.StatusCode) ~= 200 then
                 finish("error", type(response) == "table" and tonumber(response.StatusCode) == 429
-                    and "Движок занят. Повторю позже" or "Нет соединения с движком"); return
+                    and "engineBusy" or "engineOffline"); return
             end
             local valid, message = pcall(self.http.JSONDecode, self.http, response.Body)
             local row = valid and operation.model:row(message, rank)
-            if not row or not remaining[row.move] then finish("error", "Движок вернул неполный анализ"); return end
+            if not row or not remaining[row.move] then finish("error", "engineIncomplete"); return end
             rows[rank], remaining[row.move] = row, nil
         end
         finish("done", rows)

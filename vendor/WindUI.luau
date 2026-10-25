@@ -741,7 +741,7 @@ return x
 end
 
 function r.DisconnectAll()
-for u,v in next,r.Signals do
+for u=#r.Signals,1,-1 do
 local x=table.remove(r.Signals,u)
 x:Disconnect()
 end
@@ -7415,6 +7415,12 @@ ae.SafeCallback(al.Callback,FormatValue(aA))
 end
 
 an=ad.RenderStepped:Connect(function()
+if not al.UIElements.SliderIcon.Parent then
+an:Disconnect()
+if ao then ao:Disconnect() end
+ai=false
+return
+end
 local f=am and aB.Position.X or ac:GetMouseLocation().X
 local g=math.clamp(
 (f-al.UIElements.SliderIcon.AbsolutePosition.X)
@@ -7451,7 +7457,7 @@ ay.ScrollingEnabled=true
 
 ak.WindUI.CurrentInput=nil
 
-if ak.Window.NewElements then
+if ak.Window.NewElements and al.UIElements.SliderIcon.Parent then
 ag(al.UIElements.SliderIcon.Frame.Thumb,0.2,{
 ImageTransparency=0,
 Size=UDim2.new(

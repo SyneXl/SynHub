@@ -1,6 +1,7 @@
 -- By SyneX
 local Analysis = {}
 Analysis.__index = Analysis
+local I18n = (...)("i18n")
 
 local function finite(value)
     if type(value) ~= "number" and type(value) ~= "string" then return nil end
@@ -63,9 +64,8 @@ function Analysis.score(row, color)
     return string.format("%+.2f", score)
 end
 
-function Analysis.coordinates(row)
-    local pieces = {p = "Пешка", n = "Конь", b = "Слон", r = "Ладья", q = "Ферзь", k = "Король"}
-    local text = (pieces[row.piece] or "Ход") .. " " .. row.from .. " → " .. row.to
+function Analysis.coordinates(row, language)
+    local text = I18n.text(language, row.piece or "move") .. " " .. row.from .. " → " .. row.to
     if row.promotion ~= "" then text ..= " = " .. row.promotion:upper() end
     return text
 end
