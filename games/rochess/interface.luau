@@ -52,7 +52,7 @@ function Interface.create(app, context)
         app.config.enabled = value; app:invalidate(); app:scheduleSave()
     end})
     local syncingAuto = false
-    local autoToggle = autoTab:Toggle({Title = "loc:autoPlay", Value = false, Callback = function(value)
+    local autoToggle = autoTab:Toggle({Title = "loc:autoPlay", Value = app.auto.enabled, Callback = function(value)
         if not syncingAuto then app:setAuto(value) end
     end})
     app.autoToggle = autoToggle
@@ -76,8 +76,45 @@ function Interface.create(app, context)
     actions:Button({Title = "loc:refresh", Icon = "refresh-cw", Callback = function() app:invalidate(true) end})
     actions:Button({Title = "loc:flip", Icon = "repeat", Callback = function() app.driver.flip() end})
 
+    local matchmaking = autoTab:Section({Title = "loc:matchmaking", Icon = "users", Box = true, BoxBorder = false, Opened = true})
+    local syncingQueue = false
+    app.queueToggle = matchmaking:Toggle({Title = "loc:autoQueue", Value = app.config.autoQueue,
+        Callback = function(value) if not syncingQueue then app:setQueue(value) end end})
+    local syncingModes = false
+    local function modeLabel(mode) return app:t(mode.class) .. " " .. mode.id end
+    local function modeOptions()
+        local values, selected = {}, {}
+        for _, mode in ipairs(app.driver.modes) do
+            local label = modeLabel(mode)
+            table.insert(values, label)
+            if table.find(app.config.queueModes, mode.id) then table.insert(selected, label) end
+        end
+        return values, selected
+    end
+    local modeValues, selectedModes = modeOptions()
+    local modesControl = matchmaking:Dropdown({Title = "loc:queueModes", Multi = true, AllowNone = true,
+        Values = modeValues, Value = selectedModes, Callback = function(values)
+            if syncingModes then return end
+            local selected = {}
+            if type(values) == "table" then
+                for _, mode in ipairs(app.driver.modes) do
+                    if table.find(values, modeLabel(mode)) then table.insert(selected, mode.id) end
+                end
+            end
+            app.config.queueModes = selected
+            app.queue:reset(); app.dirty = true; app:scheduleSave()
+        end})
+    app.modesControl = modesControl
+    app.queueDelayControl = matchmaking:Slider({Title = "loc:queueDelay", Step = 0.5,
+        Value = {Min = 1, Max = 20, Default = app.config.queueDelay}, Callback = function(value)
+            app.config.queueDelay = math.clamp(tonumber(value) or 3, 1, 20)
+            app.queue:reset(); app.dirty = true; app:scheduleSave()
+        end})
+    local queueStatus = matchmaking:Paragraph({Title = "", Desc = ""})
+    queueStatus.ElementFrame.Visible = false
+
     local timing = autoTab:Section({Title = "loc:autoTiming", Icon = "timer",
-        Box = true, BoxBorder = false, Opened = true})
+        Box = true, BoxBorder = false, Opened = false})
     local minimum, maximum
     local syncingTiming = false
     minimum = timing:Slider({Title = "loc:minDelay", Step = 0.1,
@@ -101,7 +138,7 @@ function Interface.create(app, context)
             app.auto:reset(); app.dirty = true; app:scheduleSave()
         end})
     app.minDelayControl, app.maxDelayControl = minimum, maximum
-    local strength = autoTab:Section({Title = "loc:strength", Icon = "gauge", Box = true, BoxBorder = false, Opened = true})
+    local strength = autoTab:Section({Title = "loc:strength", Icon = "gauge", Box = true, BoxBorder = false, Opened = false})
     local eloControl
     local syncingMode = false
     local strengthControl = strength:Dropdown({Title = "loc:mode", Values = {app:t("maximum"), app:t("targetElo")},
@@ -180,11 +217,14 @@ function Interface.create(app, context)
         Callback = function(value) app.config.allArrows = value; app:scheduleSave() end})
     settings:Button({Title = "loc:unload", Icon = "power", Callback = function() app:Destroy() end})
 
-    local lastStatus, lastAuto, lastStrength, lastLanguage = nil, nil, nil, app.config.language
+    local lastStatus, lastAuto, lastStrength, lastQueue, lastLanguage = nil, nil, nil, nil, app.config.language
     local titles, descriptions = {}, {}
     local view = {}
     function view:syncAuto(value)
         syncingAuto = true; autoToggle:Set(value); syncingAuto = false
+    end
+    function view:syncQueue(value)
+        syncingQueue = true; app.queueToggle:Set(value); syncingQueue = false
     end
     function view:setLanguage(language)
         Library:SetLanguage(language)
@@ -192,6 +232,11 @@ function Interface.create(app, context)
         strengthControl:Refresh({app:t("maximum"), app:t("targetElo")})
         strengthControl:Select(app:t(app.config.strength == "elo" and "targetElo" or "maximum"))
         syncingMode = false
+        syncingModes = true
+        local values, selected = modeOptions()
+        modesControl:Refresh(values)
+        modesControl:Select(selected)
+        syncingModes = false
         lastStatus, lastAuto, lastStrength, titles, descriptions = nil, nil, nil, {}, {}
         lastLanguage = language
         app.dirty = true
@@ -222,10 +267,20 @@ function Interface.create(app, context)
             countdown:Set(math.clamp((os.clock() - plan.started) / math.max(0.01, plan.due - plan.started), 0, 1))
         end
         local autoText = app.auto.status == "autoPlayed" and app:t("autoPlayed", app.auto.lastMove or "") or app:t(app.auto.status)
-        autoStatus.ElementFrame.Visible = app.auto.enabled or app.auto.status ~= "autoPaused"
+        autoStatus.ElementFrame.Visible = (app.auto.enabled or app.auto.status ~= "autoPaused")
+            and app.auto.status ~= "openGame" and app.auto.status ~= "openMatch"
         local autoDesc = ""
         local autoKey = autoText .. autoDesc
         if lastAuto ~= autoKey then autoStatus:SetTitle(autoText); autoStatus:SetDesc(autoDesc); lastAuto = autoKey end
+        queueStatus.ElementFrame.Visible = app.queue.enabled
+        if app.queue.enabled then
+            local text = app.queue.status == "queueWaiting" and app:t("queueWaiting", math.max(0, (app.queue.due or os.clock()) - os.clock()))
+                or app:t(app.queue.status)
+            local detail = app.queue.mode or ""
+            if lastQueue ~= text .. detail then
+                queueStatus:SetTitle(text); queueStatus:SetDesc(detail); lastQueue = text .. detail
+            end
+        end
         if lastStrength ~= app.config.strength then
             eloControl.ElementFrame.Visible = app.config.strength == "elo"
             lastStrength = app.config.strength

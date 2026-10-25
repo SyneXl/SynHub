@@ -10,7 +10,38 @@ function Driver.new()
     local chess = assert(storage:FindFirstChild("Chess"), "Chess board not found")
     local Engine = require(assert(chess:FindFirstChild("Engine"), "Chess rules not found"))
     local botOk, Bot = pcall(require, chess:FindFirstChild("Bot"))
-    local driver = {client = client}
+    local settings = require(assert(chess:FindFirstChild("Config"), "Game settings not found"))
+    local modes = {}
+    for _, mode in ipairs(settings.TIME_CONTROLS) do
+        table.insert(modes, {id = mode.id, class = mode.class})
+    end
+    local driver = {client = client, modes = modes}
+
+    function driver.lobby()
+        local session = client.session
+        if not client.profile or not session then return {reason = "queueLoading"} end
+        if client.joining then return {reason = "queueJoining"} end
+        if client.searching then return {reason = "queueSearching", search = client.searching, mode = client.searching.tc} end
+        if (session.kind == "online" or session.kind == "bot") and not session.over then
+            return {reason = "queuePlaying"}
+        end
+        if session.kind ~= "idle" and session.kind ~= "online" and session.kind ~= "bot" then
+            return {reason = "paused"}
+        end
+        if client.pendingChallenge or client.modals and client.modals.top() then return {reason = "paused"} end
+        return {ready = true}
+    end
+
+    function driver.startQueue(mode)
+        if not settings.TC_BY_ID[mode] or not driver.lobby().ready then return nil end
+        if client.session.kind ~= "idle" then client.goHome() end
+        client.startSearch(mode)
+        return client.searching
+    end
+
+    function driver.cancelQueue(search)
+        if search and client.searching == search and not client.joining then client.cancelSearch() end
+    end
 
     function driver.read()
         local session = client.session

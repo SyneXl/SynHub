@@ -8,7 +8,9 @@ local Interface = require("interface")
 local Config = require("config")
 local I18n = require("i18n")
 local Auto = require("autoplay")
-local App = {version = "1.1.0"}
+local Queue = require("matchmaking")
+local Resume = require("resume")
+local App = {version = "1.2.0"}
 
 function App.start(context)
     local app: any = {alive = true, dirty = true, scope = Scope.new(), context = context, rows = {}, selected = 1,
@@ -29,6 +31,15 @@ function App.start(context)
         self:identity()
         self.auto:setEnabled(value)
         self.dirty = true
+    end
+
+    function app:setQueue(value)
+        if not self.alive then return end
+        self:identity()
+        self.queue:setEnabled(value)
+        if self.view then self.view:syncQueue(self.queue.enabled) end
+        self.dirty = true
+        self:save()
     end
 
     function app:setLanguage(language)
@@ -86,16 +97,29 @@ function App.start(context)
             if not app.alive then return end
             app:identity()
             app.dirty = true
-            if kind == "enabled" and app.view then app.view:syncAuto(app.auto.enabled) end
+            if kind == "enabled" then
+                app.config.autoPlay = app.auto.enabled
+                app:scheduleSave()
+                if app.view then app.view:syncAuto(app.auto.enabled) end
+            end
         end)
+        app.auto:setEnabled(app.config.autoPlay)
         app.scope:add(function() app.auto:Destroy() end)
+        app.queue = Queue.new(app.driver, app.config, function() app.dirty = true end)
+        app.scope:add(function() app.queue:Destroy() end)
         app.engine = Engine.new(context.api, http)
         app.scope:add(function() app.engine:cancel() end)
         app.overlay = Overlay.new(context.api.Drawing)
         app.scope:add(function() app.overlay:Destroy() end)
         app.view = Interface.create(app, context)
+        Resume.start(app, context)
 
         function app:step()
+            if self.teleporting then
+                self.engine:cancel()
+                self.rows, self.status, self.dirty = {}, "queueJoining", true
+                return
+            end
             local snapshot = self.driver.read()
             self.snapshot = snapshot
             local needed = self.config.enabled or self.auto.enabled and self.config.strength == "max"
@@ -164,9 +188,10 @@ function App.start(context)
                 if poll >= 0.05 then
                     poll = 0
                     app:step()
-                    app.auto:update(app.snapshot, app.rows, app.analysisComplete, app.rebinding)
+                    app.auto:update(app.snapshot, app.rows, app.analysisComplete, app.rebinding or app.teleporting)
+                    app.queue:update(app.rebinding or app.teleporting)
                 end
-                if paint >= 0.1 and (app.dirty or app.auto.enabled and app.auto.plan) then
+                if paint >= 0.1 and (app.dirty or app.auto.enabled and app.auto.plan or app.queue.due) then
                     paint = 0; app.dirty = false; app.view.refresh()
                 end
                 if saveAt and os.clock() >= saveAt then saveAt = nil; app:save() end

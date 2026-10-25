@@ -21,11 +21,24 @@ function Config.fromSaved(saved)
     local menuKey = key(saved.menuKey, "RightControl")
     local autoKey = key(saved.autoKey, "F8")
     if autoKey == menuKey then menuKey, autoKey = "RightControl", "F8" end
+    local modes, seen = {}, {}
+    if type(saved.queueModes) == "table" then
+        for _, mode in ipairs(saved.queueModes) do
+            if type(mode) == "string" and #mode <= 12 and mode:match("^%d+%+%d+$") and not seen[mode] then
+                seen[mode] = true; table.insert(modes, mode)
+                if #modes >= 32 then break end
+            end
+        end
+    else
+        modes = {"3+2"}
+    end
     return {language = saved.language == "ru" and "ru" or "en",
         enabled = saved.enabled ~= false, onlyOwn = saved.onlyOwn ~= false,
         arrows = saved.arrows ~= false, allArrows = saved.allArrows ~= false,
         depth = math.floor(number(saved.depth, 14, 10, 18)), menuKey = menuKey, autoKey = autoKey,
         minDelay = minimum, maxDelay = maximum,
+        autoPlay = saved.autoPlay == true, autoQueue = saved.autoQueue == true,
+        queueModes = modes, queueDelay = number(saved.queueDelay, 3, 1, 20),
         strength = saved.strength == "elo" and "elo" or "max",
         elo = math.floor(number(saved.elo, 1600, 800, 2800) / 100) * 100,
         uiScale = number(saved.uiScale, 1, 0.8, 1.2)}

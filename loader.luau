@@ -80,6 +80,7 @@ local ok, result = xpcall(function()
         api = {loadstring = loadstring, debug = debug, getconnections = getconnections,
             setthreadidentity = setthreadidentity, readfile = readfile, writefile = writefile,
             makefolder = makefolder, isfolder = isfolder,
+            queue_on_teleport = queue_on_teleport or queueonteleport or queue_on_tp or queueontp,
             request = request or http_request or (http and http.request),
             WebSocket = WebSocket or websocket, Drawing = Drawing},
         onDestroy = function(app) if hub.app == app then hub.app = nil end end,
