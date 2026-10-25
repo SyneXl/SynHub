@@ -33,12 +33,11 @@ function Interface.create(app, context)
     window:SetUIScale(app.config.uiScale)
     window:OnDestroy(function() if app.alive then app:Destroy() end end)
     window.UIElements.Main.Position = UDim2.new(1, -285, 0.5, 0)
-    window:Tag({Title = "Stockfish 18", Icon = "cpu", Color = accent, Border = true})
+    local header = window:Tag({Title = "Stockfish 18", Icon = "cpu", Color = accent, Border = true})
 
     local play = window:Tab({Title = "loc:play", Icon = "compass", IconColor = accent})
     local autoTab = window:Tab({Title = "loc:autoTab", Icon = "play", IconColor = accent})
     local settings = window:Tab({Title = "loc:settings", Icon = "settings", IconColor = accent})
-    local status = play:Paragraph({Title = "", Desc = ""})
     play:Toggle({Title = "loc:hints", Value = app.config.enabled, Callback = function(value)
         app.config.enabled = value; app:invalidate(); app:scheduleSave()
     end})
@@ -47,6 +46,9 @@ function Interface.create(app, context)
         if not syncingAuto then app:setAuto(value) end
     end})
     app.autoToggle = autoToggle
+    local actions = play:Group({})
+    actions:Button({Title = "loc:refresh", Icon = "refresh-cw", Callback = function() app:invalidate(true) end})
+    actions:Button({Title = "loc:flip", Icon = "repeat", Callback = function() app.driver.flip() end})
     local colors = palette.moves
     local cards = {}
     for rank = 1, 3 do
@@ -54,19 +56,6 @@ function Interface.create(app, context)
             Callback = function() if app.rows[rank] then app.selected = rank; app.dirty = true end end})
         cards[rank].ElementFrame.Visible = false
     end
-    local autoStatus = autoTab:Paragraph({Title = "", Desc = ""})
-    autoStatus.ElementFrame.Visible = false
-    local countdown = autoTab:ProgressBar({Title = "loc:nextMove", Animate = false, Width = 160,
-        Value = {Min = 0, Max = 1, Default = 0}, ShowValue = true, ValueWidth = 64,
-        Format = function()
-            local plan = app.auto.plan
-            return plan and plan.move and app:t("seconds", math.max(0, plan.due - os.clock())) or app:t("waitingAnalysis")
-        end})
-    countdown.ElementFrame.Visible = false
-    local actions = play:Group({})
-    actions:Button({Title = "loc:refresh", Icon = "refresh-cw", Callback = function() app:invalidate(true) end})
-    actions:Button({Title = "loc:flip", Icon = "repeat", Callback = function() app.driver.flip() end})
-
     local matchmaking = autoTab:Section({Title = "loc:matchmaking", Icon = "users", Box = true, BoxBorder = false, Opened = true})
     local syncingQueue = false
     app.queueToggle = matchmaking:Toggle({Title = "loc:autoQueue", Value = app.config.autoQueue,
@@ -101,8 +90,6 @@ function Interface.create(app, context)
             app.config.queueDelay = math.clamp(tonumber(value) or 3, 1, 20)
             app.queue:reset(); app.dirty = true; app:scheduleSave()
         end})
-    local queueStatus = matchmaking:Paragraph({Title = "", Desc = ""})
-    queueStatus.ElementFrame.Visible = false
 
     local timing = autoTab:Section({Title = "loc:autoTiming", Icon = "timer",
         Box = true, BoxBorder = false, Opened = false})
@@ -208,7 +195,7 @@ function Interface.create(app, context)
         Callback = function(value) app.config.allArrows = value; app:scheduleSave() end})
     settings:Button({Title = "loc:unload", Icon = "power", Callback = function() app:Destroy() end})
 
-    local lastStatus, lastAuto, lastStrength, lastQueue, lastLanguage = nil, nil, nil, nil, app.config.language
+    local lastHeader, lastStrength, lastLanguage = nil, nil, app.config.language
     local titles, descriptions = {}, {}
     local view = {}
     function view:syncAuto(value)
@@ -228,7 +215,7 @@ function Interface.create(app, context)
         modesControl:Refresh(values)
         modesControl:Select(selected)
         syncingModes = false
-        lastStatus, lastAuto, lastStrength, titles, descriptions = nil, nil, nil, {}, {}
+        lastHeader, lastStrength, titles, descriptions = nil, nil, {}, {}
         lastLanguage = language
         app.dirty = true
         self.refresh()
@@ -236,11 +223,33 @@ function Interface.create(app, context)
     function view.refresh()
         if lastLanguage ~= app.config.language then view:setLanguage(app.config.language); return end
         local snapshot, rows = app.snapshot, app.rows
-        local subtitle = snapshot and snapshot.color and app:t("playingAs", app:t(snapshot.color == 1 and "white" or "black")) or ""
-        if #rows > 0 then subtitle ..= (subtitle ~= "" and "\n" or "") .. app:t("depthTime", rows[1].depth, app.config.depth, app.seconds or 0) end
-        status.ElementFrame.Visible = app.status ~= "openGame" and app.status ~= "openMatch" and app.status ~= "connecting"
-        local statusKey = app.status .. subtitle
-        if lastStatus ~= statusKey then status:SetTitle(app:t(app.status)); status:SetDesc(subtitle); lastStatus = statusKey end
+        local plan = app.auto.plan
+        local text = app.auto.enabled and app.config.strength == "elo" and app:t("targetElo") or "Stockfish 18"
+        local autoError = app.auto.status ~= "autoPaused" and not app.auto.enabled
+        if app.teleporting or app.queue.enabled and app.queue.status == "queueJoining" then
+            text = app:t("headerJoining")
+        elseif app.rebinding then
+            text = app:t("paused")
+        elseif autoError then
+            text = app:t(app.auto.status == "autoLocalFailed" and "headerEngineError" or app.auto.status)
+        elseif app.auto.enabled and plan and not plan.submitted then
+            text = plan.move and app:t("headerMove", app:t("seconds", math.max(0, plan.due - os.clock()))) or app:t("headerThinking")
+        elseif app.queue.enabled and app.queue.due then
+            text = app.queue.status == "queueRetry" and app:t("headerRetry")
+                or app:t("headerGame", app:t("seconds", math.max(0, app.queue.due - os.clock())))
+        elseif app.queue.enabled and app.queue.status == "queueSearching" then
+            text = app:t("headerSearching")
+        elseif app.queue.enabled and (app.queue.status == "queueSelect" or app.queue.status == "paused") then
+            text = app:t(app.queue.status)
+        elseif app.status == "analyzing" or app.status == "refining" then
+            text = app:t("headerThinking")
+        elseif app.status == "readError" or app.status:sub(1, 6) == "engine" then
+            text = app:t("headerEngineError")
+        elseif app.status == "yourTurn" or app.status == "opponentTurn" or app.status == "waitingTurn"
+            or app.status == "gameOver" or app.status == "historyView" or app.status == "spectating" or app.status == "noMoves" then
+            text = app:t(app.status)
+        end
+        if lastHeader ~= text then header:SetTitle(text); lastHeader = text end
         for rank, card in ipairs(cards) do
             local row = app.config.enabled and rows[rank] or nil
             card.ElementFrame.Visible = row ~= nil
@@ -250,26 +259,6 @@ function Interface.create(app, context)
                 local description = Analysis.coordinates(row, app.config.language)
                 if titles[rank] ~= title then card:SetTitle(title); titles[rank] = title end
                 if descriptions[rank] ~= description then card:SetDesc(description); descriptions[rank] = description end
-            end
-        end
-        local plan = app.auto.plan
-        countdown.ElementFrame.Visible = app.auto.enabled and plan ~= nil and not plan.submitted
-        if countdown.ElementFrame.Visible then
-            countdown:Set(math.clamp((os.clock() - plan.started) / math.max(0.01, plan.due - plan.started), 0, 1))
-        end
-        local autoText = app.auto.status == "autoPlayed" and app:t("autoPlayed", app.auto.lastMove or "") or app:t(app.auto.status)
-        autoStatus.ElementFrame.Visible = (app.auto.enabled or app.auto.status ~= "autoPaused")
-            and app.auto.status ~= "openGame" and app.auto.status ~= "openMatch"
-        local autoDesc = ""
-        local autoKey = autoText .. autoDesc
-        if lastAuto ~= autoKey then autoStatus:SetTitle(autoText); autoStatus:SetDesc(autoDesc); lastAuto = autoKey end
-        queueStatus.ElementFrame.Visible = app.queue.enabled
-        if app.queue.enabled then
-            local text = app.queue.status == "queueWaiting" and app:t("queueWaiting", math.max(0, (app.queue.due or os.clock()) - os.clock()))
-                or app:t(app.queue.status)
-            local detail = app.queue.mode or ""
-            if lastQueue ~= text .. detail then
-                queueStatus:SetTitle(text); queueStatus:SetDesc(detail); lastQueue = text .. detail
             end
         end
         if lastStrength ~= app.config.strength then
