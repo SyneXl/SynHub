@@ -4,14 +4,14 @@
     {
       "id": "slova",
       "name": "Игра в Слова",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "placeIds": [
         71106427459865
       ],
       "script": {
-        "path": "releases/slova/c33fdebca07230f2b318de4d2275926fef86d7e5800e5fae00fd43c395859087.luau",
-        "bytes": 32176,
-        "sha256": "c33fdebca07230f2b318de4d2275926fef86d7e5800e5fae00fd43c395859087"
+        "path": "releases/slova/7b86efa9fa01a95fe8a04fc6b422d1fc0a53a58608dd1ac97e51858c8096d383.luau",
+        "bytes": 32221,
+        "sha256": "7b86efa9fa01a95fe8a04fc6b422d1fc0a53a58608dd1ac97e51858c8096d383"
       },
       "assets": {
         "dictionary": {

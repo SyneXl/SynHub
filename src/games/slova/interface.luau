@@ -5,7 +5,9 @@ function Interface.create(app, context, Core)
     local bot, driver = app.bot, app.driver
     local player = game:GetService("Players").LocalPlayer
     local Library = assert(context.api.loadstring(context.assets.interface, "Interface"))()
+    local window
     app.scope:add(function()
+        if window then return end
         for _, gui in ipairs({Library.ScreenGui,Library.DropdownGui,Library.TooltipGui,Library.NotificationGui}) do
             if gui.Destroy then pcall(gui.Destroy,gui) end
         end
@@ -14,7 +16,7 @@ function Interface.create(app, context, Core)
     for i,gui in ipairs({Library.ScreenGui,Library.DropdownGui,Library.TooltipGui,Library.NotificationGui}) do
         gui.DisplayOrder=1000+i
     end
-    local window = Library:CreateWindow({Title="SynHub — Слова", Author="By SyneX", Folder="SynHub/slova/UI",
+    window = Library:CreateWindow({Title="SynHub — Слова", Author="By SyneX", Folder="SynHub/slova/UI",
         Size=UDim2.fromOffset(650,650), MinSize=Vector2.new(580,490), SideBarWidth=130,
         Theme="Dark", Transparent=false, Resizable=true, User={Enabled=false}})
     app.window = window
