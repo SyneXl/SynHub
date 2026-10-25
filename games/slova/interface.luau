@@ -1,4 +1,6 @@
 -- By SyneX
+local require = ...
+local Config = require("config")
 local Interface = {}
 
 function Interface.create(app, context, Core)
@@ -21,7 +23,7 @@ function Interface.create(app, context, Core)
         Theme="Dark", Transparent=false, Resizable=true, User={Enabled=false}})
     app.window = window
     app.scope:add(function() window:Destroy() end)
-    window:SetToggleKey(Enum.KeyCode.RightControl)
+    window:SetToggleKey(nil)
     window:OnDestroy(function() if app.alive then app:Destroy() end end)
 
     local play = window:Tab({Title="Игра",Icon="play"})
@@ -60,8 +62,12 @@ function Interface.create(app, context, Core)
     local stats = textBlock(historyTab,"За эту сессию",nil)
     local historyView = textBlock(historyTab,"Использованные слова","Пока пусто")
     local attemptsView = textBlock(historyTab,"Последние попытки","Пока пусто")
+    app.autoClearHistory = historyTab:Toggle({Title="Автоочистка",Desc="Очищать историю при начале новой катки",
+        Value=app.config.autoClearHistory,Callback=function(value)
+            app.config.autoClearHistory=value;app:scheduleSave(0.6)
+        end})
     historyTab:Button({Title="Очистить историю",Callback=function()
-        bot.used,bot.history={},{};bot.historyRef=nil;app.dirty=true;app:scheduleSave(0.2)
+        bot:clearHistory();app:scheduleSave(0.2)
     end})
     settings:Section({Title="Печать"})
     app.speed=settings:Slider({Title="Скорость печати",Desc="Слов в минуту",
@@ -72,7 +78,46 @@ function Interface.create(app, context, Core)
         Callback=function(value) app.config.natural=value;app:scheduleSave(0.6) end})
     settings:Toggle({Title="Отправлять после ручного выбора",Desc="Автобой отправляет слова всегда",Value=app.config.enter,
         Callback=function(value) app.config.enter=value;app:scheduleSave(0.6) end})
-    textBlock(settings,"Клавиши","F8 — включить или выключить автобой\nEsc — остановить\nRight Ctrl — показать или скрыть меню")
+    settings:Section({Title="Клавиши",Desc="Нажми на поле и затем на нужную клавишу"})
+    local keybinds = {}
+    app.keybinds = keybinds
+    for _, action in ipairs({{name="auto",title="Автобой"},{name="stop",title="Остановить"},{name="menu",title="Показать или скрыть меню"}}) do
+        local name = action.name
+        keybinds[name] = settings:Keybind({Title=action.title,Value=app.config.keybinds[name],
+            KeyboardOnly=true,AllowEscape=true,
+            OnPicking=function(picking)
+                app:identity()
+                if picking then
+                    for other, control in pairs(keybinds) do
+                        if other ~= name then control:CancelPicking() end
+                    end
+                end
+                driver.rebinding=picking
+            end,
+            OnChanged=function(key)
+                app:identity()
+                local previous=app.config.keybinds[name]
+                for other, value in pairs(app.config.keybinds) do
+                    if other ~= name and value == key then
+                        app.config.keybinds[other]=previous
+                        keybinds[other]:Set(previous)
+                    end
+                end
+                app.config.keybinds[name]=key;app:scheduleSave(0.2)
+            end})
+    end
+    local function cancelPicking()
+        for _, control in pairs(keybinds) do control:CancelPicking() end
+        driver.rebinding=false
+    end
+    app.scope:add(cancelPicking)
+    window:OnClose(function() app:identity();cancelPicking() end)
+    settings:Button({Title="Сбросить клавиши",Callback=function()
+        app:identity();cancelPicking()
+        app.config.keybinds=table.clone(Config.keybindDefaults)
+        for name, control in pairs(keybinds) do control:Set(app.config.keybinds[name]) end
+        app:scheduleSave(0.2)
+    end})
     settings:Section({Title="Обслуживание"})
     settings:Button({Title="Очистить ввод в игре",Callback=function()
         setEnabled(false)

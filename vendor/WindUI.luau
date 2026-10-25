@@ -7896,7 +7896,7 @@ local al={}
 for am,an in next,ak.Blacklist do
 table.insert(al,Enum.KeyCode[NormalizeKeyCode(an)])
 end
-table.insert(al,Enum.KeyCode[NormalizeKeyCode"Escape"])
+if not aj.AllowEscape then table.insert(al,Enum.KeyCode.Escape)end
 
 local am=true
 
@@ -7962,65 +7962,46 @@ if ak.Locked then
 ak:Lock()
 end
 
-local an
+local captureBegan,captureEnded
 
-ad.AddSignal(ak.KeybindFrame.UIElements.Main.MouseButton1Click,function()
-if am then
-if ak.CanChange then
-ak.Picking=true
-ak.UIElements.Keybind.Frame.Frame.TextLabel.Text="..."
-
-
-
-local ao
-ao=ac.InputBegan:Connect(function(ap)
-local aq
-
-if ap.UserInputType==Enum.UserInputType.Keyboard then
-if table.find(al,ap.KeyCode)then
-aq=nil
-return
-else
-aq=ap.KeyCode.Name
-end
-elseif
-ap.UserInputType==Enum.UserInputType.MouseButton1
-and not table.find(al,"MouseLeftButton")
-then
-aq="MouseLeftButton"
-elseif
-ap.UserInputType==Enum.UserInputType.MouseButton2
-and not table.find(al,"MouseRightButton")
-then
-aq="MouseRightButton"
-end
-
-if an then
-an:Disconnect()
-end
-
-an=ac.InputEnded:Connect(function(ar)
-if
-aq
-and(
-ar.KeyCode.Name==aq
-or aq=="MouseLeft"and ar.UserInputType==Enum.UserInputType.MouseButton1
-or aq=="MouseRight"and ar.UserInputType==Enum.UserInputType.MouseButton2
-)
-then
+function ak.CancelPicking(self)
+if captureBegan then captureBegan:Disconnect();captureBegan=nil end
+if captureEnded then captureEnded:Disconnect();captureEnded=nil end
+if ak.Picking then
 ak.Picking=false
+ad.SafeCallback(aj.OnPicking,false)
+end
+ak.UIElements.Keybind.Frame.Frame.TextLabel.Text=ak.Value
+end
 
-ak.UIElements.Keybind.Frame.Frame.TextLabel.Text=aq
-ak.Value=aq
+function ak.Pick(self)
+if not am or not ak.CanChange or ak.Picking then return end
+ak.Picking=true
+ad.SafeCallback(aj.OnPicking,true)
+ak.UIElements.Keybind.Frame.Frame.TextLabel.Text="..."
+captureBegan=ad.AddSignal(ac.InputBegan,function(input)
+local key
+if input.UserInputType==Enum.UserInputType.Keyboard then
+if input.KeyCode==Enum.KeyCode.Unknown or table.find(al,input.KeyCode)then return end
+key=input.KeyCode.Name
+elseif not aj.KeyboardOnly then
+if input.UserInputType==Enum.UserInputType.MouseButton1 then key="MouseLeft"
+elseif input.UserInputType==Enum.UserInputType.MouseButton2 then key="MouseRight"end
+end
+if not key or table.find(ak.Blacklist,key)then return end
+if captureBegan then captureBegan:Disconnect();captureBegan=nil end
+captureEnded=ad.AddSignal(ac.InputEnded,function(released)
+if released.KeyCode.Name~=key
+and not(key=="MouseLeft"and released.UserInputType==Enum.UserInputType.MouseButton1)
+and not(key=="MouseRight"and released.UserInputType==Enum.UserInputType.MouseButton2)then return end
+ak:CancelPicking()
+ak:Set(key)
+ad.SafeCallback(aj.OnChanged,key)
+end)
+end)
+end
 
-ao:Disconnect()
-an:Disconnect()
-end
-end)
-end)
-end
-end
-end)
+ad.AddSignal(ak.KeybindFrame.UIElements.Main.MouseButton1Click,function()ak:Pick()end)
 
 ad.AddSignal(ac.InputBegan,function(ao,ap)
 if ac:GetFocusedTextBox()then

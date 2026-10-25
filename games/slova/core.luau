@@ -57,6 +57,12 @@ function Core:remember(word)
     self.emit("history", word)
 end
 
+function Core:clearHistory()
+    self.used, self.history, self.log = {}, {}, {}
+    self.historyRef, self.historySize = nil, nil
+    self.emit("history")
+end
+
 function Core:candidates(first, ending, offset, count)
     first, ending = Core.canonical(first), Core.canonical(ending)
     local result, found = {}, 0
@@ -152,8 +158,12 @@ function Core:tick(dt)
     self.snapshot = s
     if not s then self:report("Ожидаю интерфейс игры"); return end
     if s.matchId ~= self.matchId then
+        if self.config.autoClearHistory and s.matchId ~= self.historyMatchId then self:clearHistory() end
         self.matchId = s.matchId
+        self.historyMatchId = s.matchId
+        self.historyRef, self.historySize = nil, nil
         self.matchUsed, self.attempted = {}, {}
+        self.emit("match")
     end
     if s.history ~= self.historyRef or #(s.history or {}) ~= self.historySize then
         self.historyRef,self.historySize=s.history,#(s.history or {})

@@ -1,4 +1,4 @@
-WindUI 1.6.66 (header shortened; runtime unchanged)
+WindUI 1.6.66 (header shortened; keybind capture extended)
 ===================================================
 
 MIT License

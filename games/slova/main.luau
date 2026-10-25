@@ -6,7 +6,7 @@ local Driver = require("driver")
 local Storage = require("storage")
 local Interface = require("interface")
 local Scope = require("scope")
-local App = {version = "1.0.5"}
+local App = {version = "1.0.6"}
 
 function App.start(context)
     local app = {alive = true, dirty = true, scope = Scope.new(), context = context}
@@ -26,7 +26,8 @@ function App.start(context)
         local rejected = {}
         for word in pairs(self.bot.rejected) do table.insert(rejected, word) end
         table.sort(rejected)
-        local ok, err = storage:save({version = 1, config = self.config, history = self.bot.history, rejected = rejected})
+        local ok, err = storage:save({version = 1, config = self.config, history = self.bot.history,
+            historyMatchId = self.bot.historyMatchId, rejected = rejected})
         if not ok and not warnedSave then
             warnedSave = true
             warn("[SynHub] Настройки не сохранены: " .. tostring(err))
@@ -61,6 +62,7 @@ function App.start(context)
             app.dirty = true
             if kind ~= "status" and kind ~= "enabled" then app:scheduleSave(0.8) end
         end)
+        app.bot.historyMatchId = type(saved.historyMatchId) == "string" and saved.historyMatchId or nil
         local history = type(saved.history) == "table" and saved.history or {}
         for index = #history, 1, -1 do
             if type(history[index]) == "string" then pcall(app.bot.remember, app.bot, history[index]) end
@@ -91,9 +93,15 @@ function App.start(context)
         app.scope:add(function() if responseConnection then responseConnection:Disconnect() end end)
         connectResponse()
         app.scope:add(game:GetService("UserInputService").InputBegan:Connect(function(input)
+            if not app.alive or app.driver.rebinding then return end
             app:identity()
-            if input.KeyCode == Enum.KeyCode.F8 then app.setEnabled(not app.bot.enabled)
-            elseif input.KeyCode == Enum.KeyCode.Escape then app.setEnabled(false) end
+            local focused = game:GetService("UserInputService"):GetFocusedTextBox()
+            local snapshot = focused and app.driver.read()
+            if focused and (not snapshot or snapshot.blocked) then return end
+            local keys = app.config.keybinds
+            if input.KeyCode == Enum.KeyCode[keys.auto] then app.setEnabled(not app.bot.enabled)
+            elseif input.KeyCode == Enum.KeyCode[keys.stop] then app.setEnabled(false)
+            elseif input.KeyCode == Enum.KeyCode[keys.menu] then app.window:Toggle() end
         end))
         local uiElapsed, remoteElapsed, lastKey, choiceAt = 0, 0, nil, 0
         app.scope:add(game:GetService("RunService").Heartbeat:Connect(function(dt)

@@ -50,12 +50,12 @@ function Driver.new(context, canonical)
         local state = inspect.getupvalue(binding.submit, 2)
         if type(state) ~= "table" or state.tableId == nil then return nil end
         local focused = input:GetFocusedTextBox()
-        local blocked = binding.box:GetAttribute("ChatInputBlocked") == true
+        local blocked = driver.rebinding == true or binding.box:GetAttribute("ChatInputBlocked") == true
             or focused ~= nil and focused ~= binding.box
         local own = state.phase == "playing" and state.turn == state.you
         local busy = inspect.getupvalue(binding.submit, 4) == true
         local locked = os.clock() < (inspect.getupvalue(binding.submit, 3) or 0)
-        local matchId = tostring(state.tableId) .. ":" .. tostring(state.generation or 0)
+        local matchId = tostring(game.JobId or "") .. ":" .. tostring(state.tableId) .. ":" .. tostring(state.generation or 0)
         local key = matchId .. ":" .. tostring(state.round) .. ":" .. tostring(state.turn) .. ":" .. tostring(state.phase)
         return {key = key, matchId = matchId, phase = state.phase, own = own,
             ready = own and not busy and not locked and not blocked and not state.acceptedWord,
