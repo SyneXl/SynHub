@@ -23,7 +23,7 @@ if type(revision) ~= "string" or #revision ~= 40 or not revision:match("^%x+$") 
 end
 
 local BASE = ROOT .. revision .. "/"
-local games = {[71106427459865] = "slova"}
+local games = {[71106427459865] = "slova", [139717576471404] = "rochess"}
 local env = getgenv()
 local hub = env.__SynHub or {}
 if hub.loading then warn("[SynHub] Загрузка уже выполняется"); return end
@@ -51,12 +51,16 @@ local ok, result = xpcall(function()
     end
     local module = import("main")
     assert(type(module) == "table" and type(module.start) == "function", "Не найден модуль игры")
+    local assets = {interface = fetch("vendor/WindUI.luau")}
+    for key, path in pairs(module.assets or {}) do assets[key] = fetch(folder .. path) end
     local context = {
-        env = env, assets = {dictionary = fetch(folder .. "words.txt"), interface = fetch("vendor/WindUI.luau")},
+        env = env, assets = assets,
         release = {id = name, version = module.version},
         api = {loadstring = loadstring, debug = debug, getconnections = getconnections,
             setthreadidentity = setthreadidentity, readfile = readfile, writefile = writefile,
-            makefolder = makefolder, isfolder = isfolder},
+            makefolder = makefolder, isfolder = isfolder,
+            request = request or http_request or (http and http.request),
+            WebSocket = WebSocket or websocket, Drawing = Drawing},
         onDestroy = function(app) if hub.app == app then hub.app = nil end end,
     }
     if hub.app then hub.app:Destroy(); hub.app = nil end

@@ -7,6 +7,7 @@ local Storage = require("storage")
 local Interface = require("interface")
 local Scope = require("scope")
 local App = {version = "1.0.6"}
+App.assets = {dictionary = "words.txt"}
 
 function App.start(context)
     local app = {alive = true, dirty = true, scope = Scope.new(), context = context}
