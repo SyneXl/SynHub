@@ -13,7 +13,7 @@ local ok, result = xpcall(function()
     local function fetch(path)
         local lastError
         for attempt = 1, 3 do
-            local success, value = pcall(game.HttpGet, game, BASE .. folder .. path)
+            local success, value = pcall(game.HttpGet, game, BASE .. path)
             if success and type(value) == "string" and #value > 0 then return value end
             lastError = value
             if attempt < 3 then task.wait(0.3 * attempt) end
@@ -26,7 +26,7 @@ local ok, result = xpcall(function()
         if modules[moduleName] ~= nil then return modules[moduleName] end
         assert(not loading[moduleName], "Циклическая зависимость: " .. moduleName)
         loading[moduleName] = true
-        local chunk, err = loadstring(fetch(moduleName .. ".luau"), "SynHub/" .. name .. "/" .. moduleName)
+        local chunk, err = loadstring(fetch(folder .. moduleName .. ".luau"), "SynHub/" .. name .. "/" .. moduleName)
         assert(chunk, "Не удалось прочитать модуль " .. moduleName .. ": " .. tostring(err))
         local value = chunk(import)
         assert(value ~= nil, "Пустой модуль: " .. moduleName)
@@ -36,7 +36,7 @@ local ok, result = xpcall(function()
     local module = import("main")
     assert(type(module) == "table" and type(module.start) == "function", "Не найден модуль игры")
     local context = {
-        env = env, assets = {dictionary = fetch("words.txt"), interface = fetch("windui.luau")},
+        env = env, assets = {dictionary = fetch(folder .. "words.txt"), interface = fetch("vendor/WindUI.luau")},
         release = {id = name, version = module.version},
         api = {loadstring = loadstring, debug = debug, getconnections = getconnections,
             setthreadidentity = setthreadidentity, readfile = readfile, writefile = writefile,
